@@ -381,24 +381,27 @@ function parseDetailedSections(allLines) {
         continue;
       }
 
-      // Hotel line: "-------  Layover at HOTEL NAME (PHONE)  -------"
+      // Hotel line: "-------  Layover at HOTEL NAME (PHONE)  ------- 33h55 -------"
       if (/Layover\s+at\s+/i.test(jt)) {
         const hotelMatch = jt.match(/Layover\s+at\s+(.+?)(?:\s*\((\d[\d\s.\-()]+)\))?\s*$/i);
         if (hotelMatch) {
           const phoneInline = jt.match(/\((\d[\d\s.\-()+]{7,14})\)/);
+          const durationMatch = jt.match(/\b(\d+h\d+)\b/);
           hotels.push({
             afterDayNum: lastDayNum,
             name: hotelMatch[1].replace(/\s*\([^)]*\)/, '').trim(),
             phone: phoneInline ? phoneInline[1] : null,
+            duration: durationMatch ? durationMatch[1] : null,
           });
         }
         continue;
       }
 
-      // Release line
+      // Release line — stop accepting legs after this point
       if (/\bRelease\b/i.test(jt)) {
         const m = jt.match(/(\d{2}:\d{2}|\d{4})/);
         if (m) releaseTime = formatTime(m[1]);
+        inLegSection = false;
         continue;
       }
 
@@ -540,7 +543,7 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
         dayNum: d + 1,
         date: dk,
         legs: dayLegs,
-        hotel: hotel ? { name: hotel.name, phone: hotel.phone } : null,
+        hotel: hotel ? { name: hotel.name, phone: hotel.phone, duration: hotel.duration || null } : null,
       });
 
       const mainDest = getMainDest(dayLegs, hotel, strip.lay?.[dk]);
@@ -553,7 +556,7 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
         dayNum: d + 1,
         totalDays: lengthDays,
         legs: dayLegs,
-        hotel: hotel ? { name: hotel.name, phone: hotel.phone } : null,
+        hotel: hotel ? { name: hotel.name, phone: hotel.phone, duration: hotel.duration || null } : null,
         reportTime: d === 0 ? (det?.reportTime || strip.rpt?.[dk] || null) : null,
         releaseTime: isLastDay ? (det?.releaseTime || strip.rel?.[dk] || null) : null,
         creditHours: isLastDay ? (det?.creditHours || strip.cred?.[startDateKey] || null) : null,
