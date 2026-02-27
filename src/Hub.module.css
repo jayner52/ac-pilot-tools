@@ -1,0 +1,228 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.header {
+  padding: 3rem 2rem 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  text-align: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.brandIcon {
+  display: flex;
+  align-items: center;
+  color: #60a5fa;
+  opacity: 0.9;
+}
+
+.brandName {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 60%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brandTagline {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── Main grid ──────────────────────────────────────────── */
+.main {
+  flex: 1;
+  padding: 1rem 1.5rem 3rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ── Tool card ──────────────────────────────────────────── */
+.cardLink {
+  text-decoration: none;
+  display: block;
+}
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--accent-bg, var(--bg-secondary));
+  border: 1px solid var(--accent-border, var(--border));
+  border-radius: var(--radius-lg);
+  transition: all 0.18s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-color: var(--accent, var(--border-strong));
+}
+
+.cardIcon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg, var(--bg-tertiary));
+  border: 1px solid var(--accent-border, var(--border));
+  border-radius: var(--radius-md);
+  color: var(--accent, var(--text-secondary));
+}
+
+.cardIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cardBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.cardName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.externalIcon {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.cardTagline {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent, var(--text-muted));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.cardDesc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.cardArrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  align-self: center;
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.card:hover .cardArrow {
+  transform: translateX(3px);
+  color: var(--accent, var(--text-secondary));
+}
+
+/* ── Coming soon card ───────────────────────────────────── */
+.comingSoon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1.25rem;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.comingSoonIcon {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-bottom: 0.25rem;
+}
+
+.comingSoonIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.comingSoonText {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.comingSoonSub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.footer {
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+.footer p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .header { padding: 2rem 1.25rem 1.5rem; }
+  .brandName { font-size: 1.35rem; }
+  .main { padding: 0.75rem 1rem 2rem; }
+  .grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,192 @@
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem 2rem;
+  overflow-y: auto;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Nav bar */
+.navBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.monthLabel {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 180px;
+  text-align: center;
+}
+
+.navBtn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.navBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Stats chips */
+.statsRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.statChip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.chipFlying {
+  background: var(--color-flying-bg);
+  color: var(--color-flying-text);
+  border: 1px solid rgba(59,130,246,0.25);
+}
+
+.chipLayover {
+  background: var(--color-layover-bg);
+  color: var(--color-layover-text);
+  border: 1px solid rgba(249,115,22,0.25);
+}
+
+.chipOff {
+  background: var(--color-off-bg);
+  color: var(--color-off-text);
+  border: 1px solid rgba(34,197,94,0.25);
+}
+
+.chipTraining {
+  background: var(--color-training-bg);
+  color: var(--color-training-text);
+  border: 1px solid rgba(234,179,8,0.25);
+}
+
+/* Export button */
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  padding: 0.4rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.exportBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.2);
+}
+
+/* Weekday headers */
+.weekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.weekdayLabel {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0.25rem 0;
+}
+
+/* Calendar grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  flex: 1;
+}
+
+.emptyCell {
+  border-radius: var(--radius-md);
+  min-height: 80px;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  justify-content: center;
+  padding-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot_off { background: var(--color-off-text); }
+.dot_flying { background: var(--color-flying-text); }
+.dot_layover { background: var(--color-layover-text); }
+.dot_training { background: var(--color-training-text); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container { padding: 0.75rem 0.625rem 1.5rem; }
+  .navBar { gap: 0.5rem; }
+  .monthLabel { font-size: 1rem; min-width: 150px; }
+  .statsRow { display: none; }
+  .emptyCell { min-height: 56px; }
+}

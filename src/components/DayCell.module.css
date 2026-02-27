@@ -1,0 +1,175 @@
+.cell {
+  position: relative;
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  min-height: 80px;
+  cursor: pointer;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: hidden;
+}
+
+.cell:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  z-index: 1;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--color-flying-text);
+  outline-offset: 2px;
+}
+
+.outside {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Type backgrounds */
+.type_off {
+  background: var(--color-off-bg);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+
+.type_flying {
+  background: var(--color-flying-bg);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.type_layover {
+  background: var(--color-layover-bg);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.type_training {
+  background: var(--color-training-bg);
+  border-color: rgba(234, 179, 8, 0.2);
+}
+
+.type_unknown {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+/* Selected state */
+.selected {
+  box-shadow: 0 0 0 2px var(--color-flying-text);
+  border-color: var(--color-flying-text) !important;
+  z-index: 2;
+}
+
+/* Today indicator */
+.today {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.todayBadge {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-flying-text);
+  flex-shrink: 0;
+}
+
+/* Header row */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.dayNum {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+/* Content */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* OFF */
+.offLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-off-text);
+}
+
+/* Pairing code */
+.pairingCode {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.type_flying .pairingCode { color: var(--color-flying-text); }
+.type_layover .pairingCode { color: var(--color-layover-text); }
+
+/* Destination */
+.destination {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* Layover pin icon */
+.layoverBadge {
+  display: inline-flex;
+  color: var(--color-layover-text);
+  margin-top: auto;
+}
+
+/* Training */
+.trainingLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-training-text);
+}
+
+.trainingCode {
+  font-size: 0.65rem;
+  color: var(--color-training-text);
+  opacity: 0.8;
+}
+
+/* Unknown */
+.unknownLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Responsive: compact on small screens */
+@media (max-width: 640px) {
+  .cell {
+    min-height: 56px;
+    padding: 0.375rem;
+  }
+  .pairingCode { font-size: 0.65rem; }
+  .destination { display: none; }
+  .dayNum { font-size: 0.7rem; }
+}
