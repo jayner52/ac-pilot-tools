@@ -52,11 +52,7 @@ export default function Hub() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.brandIcon}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
-              <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 4c-2 0-4.5 1.5-4.5 1.5L6 7.2l-2 2.8 4.5 1.5-1 2.5-2-.5L4 15l3 1 1 3 2.5-1.5 1.5 4.5 2.8-2"/>
-            </svg>
-          </span>
+          <span className={styles.brandIcon}>✈</span>
           <span className={styles.brandName}>AC Pilot Tools</span>
         </div>
         <p className={styles.brandTagline}>Built by pilots, for pilots — because Air Canada's systems shouldn't be this painful.</p>
