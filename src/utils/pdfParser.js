@@ -511,6 +511,11 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
   for (const ps of pairingStarts) {
     const { code, startDateKey } = ps;
 
+    // Off-type activities (vacation, PBS buffer days, etc.) — leave as 'off'
+    // Numeric-only codes (341, 259, …) = vacation/off variants in Air Canada schedules
+    // PBS_* codes = Preferential Bidding System buffer days
+    if (/^\d+$/.test(code) || /^PBS/i.test(code)) continue;
+
     // Get detailed data for this occurrence
     if (!codeOccurrenceIndex[code]) codeOccurrenceIndex[code] = 0;
     const detArr = detailedByCode[code] || [];

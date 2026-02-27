@@ -8,9 +8,14 @@
   border: 1px solid var(--border);
   transition: all 0.15s ease;
   display: flex;
-  flex-direction: row;
-  padding: 0;
-  overflow: hidden;
+  flex-direction: column;
+  /*
+   * overflow: visible so the absolutely-positioned timeTrack can extend
+   * 2 px into the grid gap on each connecting side, visually linking
+   * consecutive days of the same pairing.
+   * Background still clips to border-radius (CSS spec §17.3).
+   */
+  overflow: visible;
 }
 
 .cell:hover {
@@ -33,23 +38,36 @@
   pointer-events: none;
 }
 
+/* ── Inner wrapper ───────────────────────────────────────── */
+/*
+ * Separate from .cell so that overflow:hidden here clips the accent bar
+ * to the rounded corners, while .cell keeps overflow:visible for the track.
+ */
+.inner {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  min-height: 0;
+}
+
 /* ── Accent bar (left edge, trip only) ───────────────────── */
 .accentBar {
   width: 3px;
   flex-shrink: 0;
   align-self: stretch;
   background: var(--color-trip-accent);
+  /* Corners are clipped by .inner's border-radius + overflow:hidden */
 }
-
-.pairingStart .accentBar { border-top-left-radius: var(--radius-md); }
-.pairingEnd   .accentBar { border-bottom-left-radius: var(--radius-md); }
 
 /* ── Body ────────────────────────────────────────────────── */
 .body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0.375rem 0.4rem 0.375rem 0.35rem;
+  /* Extra bottom padding so content doesn't slide under the 5 px track */
+  padding: 0.375rem 0.4rem 8px 0.35rem;
   gap: 0.15rem;
   min-width: 0;
 }
@@ -131,40 +149,7 @@
   color: var(--text-muted);
 }
 
-/* ── Time bar ────────────────────────────────────────────── */
-/*
- * The bar represents the work period within a 24-hour day.
- * --bar-left  = start of work as % of 24h  (0% = midnight, 50% = noon)
- * --bar-right = end   of work as % of 24h
- *
- * Examples:
- *   First day, report 06:30  → barLeft=27%,  barRight=100%  (most of day)
- *   Last day,  release 01:00 → barLeft=0%,   barRight=4.2%  (tiny sliver)
- *   Middle day               → barLeft=0%,   barRight=100%  (full bar)
- */
-.timeBarSection {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: auto;
-  flex-shrink: 0;
-}
-
-.timeTrack {
-  height: 5px;
-  border-radius: 3px;
-  background: linear-gradient(
-    to right,
-    var(--color-trip-bg)     0%,
-    var(--color-trip-bg)     var(--bar-left,  0%),
-    var(--color-trip-accent) var(--bar-left,  0%),
-    var(--color-trip-accent) var(--bar-right, 100%),
-    var(--color-trip-bg)     var(--bar-right, 100%),
-    var(--color-trip-bg)     100%
-  );
-  flex-shrink: 0;
-}
-
+/* ── Bar label (time text above track) ───────────────────── */
 .barLabel {
   font-size: 0.55rem;
   font-weight: 600;
@@ -175,6 +160,48 @@
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
+
+/* ── Time track ──────────────────────────────────────────── */
+/*
+ * Absolutely positioned at the cell bottom, full width.
+ * A CSS linear-gradient paints the work period in accent color;
+ * the rest shows the faint trip background.
+ *
+ * CSS custom properties set per-cell in JSX:
+ *   --bar-left:  start of work as % of 24 h  (0% = midnight)
+ *   --bar-right: end   of work as % of 24 h
+ *
+ * Examples:
+ *   First day, report 06:30  → --bar-left:27.1%  --bar-right:100%
+ *   Last  day, release 01:00 → --bar-left:0%     --bar-right:4.2%  (tiny sliver)
+ *   Middle day               → --bar-left:0%     --bar-right:100%  (solid)
+ */
+.timeTrack {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(
+    to right,
+    var(--color-trip-bg)     0%,
+    var(--color-trip-bg)     var(--bar-left,  0%),
+    var(--color-trip-accent) var(--bar-left,  0%),
+    var(--color-trip-accent) var(--bar-right, 100%),
+    var(--color-trip-bg)     var(--bar-right, 100%),
+    var(--color-trip-bg)     100%
+  );
+  /* Round only the bottom corners to match the cell */
+  border-radius: 0 0 calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px);
+}
+
+/*
+ * Extend the track 2 px into the neighbouring grid gap.
+ * Grid gap is 4 px; left cell extends 2 px right, right cell extends 2 px
+ * left → they meet in the middle, creating a visual connection.
+ */
+.trackExtLeft  .timeTrack { left:  -2px; }
+.trackExtRight .timeTrack { right: -2px; }
 
 /* ── Type backgrounds ────────────────────────────────────── */
 .type_trip {
@@ -216,8 +243,8 @@
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .cell { min-height: 72px; }
+  .cell    { min-height: 72px; }
   .pairingCode { display: none; }
-  .barLabel { display: none; }
-  .dayNum { font-size: 0.7rem; }
+  .barLabel    { display: none; }
+  .dayNum  { font-size: 0.7rem; }
 }
