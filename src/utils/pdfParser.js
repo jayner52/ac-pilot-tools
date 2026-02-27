@@ -309,121 +309,96 @@ function findNearestCol(x, colMap) {
 function parseDetailedSections(allLines) {
   const pairings = [];
 
-  // Find pairing section starts: a line containing only a pairing code like "T1029"
-  // preceded by "January"/"February" mini-calendar and DOW header
-  // The pairing code label appears in the mini-calendar header area
-  // Pattern from the PDF: {x:176, str:"T1029"} next to month names
-  const PAIRING_CODE_RE = /^(?:T|t)(\d{3,5})$|^(\d{3,5})$/;
-
-  // Collect all lines and look for pairing indicators
   for (let i = 0; i < allLines.length; i++) {
     const line = allLines[i];
-    const t = line.text.trim();
+    if (line.page === 1) continue; // strip is on page 1; pairing sections are always pages 2+
 
-    // Look for a line that's just a pairing code, possibly combined with a month name
-    // e.g. "T1029" in a line, or appearing alongside "January"/"February"
-    // From our data: {"x":176,"y":498,"str":"T1029"} near {"x":30,"y":494,"str":"January"}
-    const codeMatch = t.match(/\b(T\d{3,5})\b/);
-    if (!codeMatch) continue;
+    // Anchor on the column header row — the unambiguous start of a leg table
+    if (!/\bDAY\b.*\bFLT#?\b/i.test(line.text)) continue;
 
-    // Check if this looks like a pairing section header (not the summary strip)
-    // Signals: nearby "Report" line, column headers (DAY, FLT#, etc.) within next 20 lines
-    let hasReport = false;
-    let hasColHeaders = false;
+    // Look backward on the SAME page for the pairing T-code and report time.
+    // Use item-level detection so multi-T-code mini-calendar lines (cross-refs) are skipped.
+    // Only a line with exactly ONE unique T-code item is the standalone heading.
+    let code = null;
     let reportTime = null;
-
-    for (let j = i + 1; j < Math.min(i + 25, allLines.length); j++) {
-      const jt = allLines[j].text;
-      if (/\bReport\b/i.test(jt)) { hasReport = true; }
-      if (/\bDAY\b.*\bFLT#?\b/i.test(jt)) { hasColHeaders = true; }
-      if (/\bRelease\b/i.test(jt)) break; // too far
-    }
-
-    if (!hasColHeaders) continue; // not a detailed section
-
-    const code = codeMatch[1];
-
-    // Find the Report time
-    for (let j = i + 1; j < Math.min(i + 20, allLines.length); j++) {
+    for (let j = i - 1; j >= Math.max(0, i - 30); j--) {
+      if (allLines[j].page !== line.page) break; // don't cross page boundaries
       const jl = allLines[j];
-      if (/\bReport\b/i.test(jl.text)) {
-        const m = jl.text.match(/(\d{2}:\d{2}|\d{4})/);
-        if (m) { reportTime = formatTime(m[1]); break; }
+      const jt = jl.text;
+
+      // T-code: accept only lines whose items contain exactly one unique T-code.
+      // Lines with 2+ T-code items are mini-calendar cross-refs — skip them.
+      const tCodeItems = jl.items.filter(it => /^T\d{3,5}[A-Z]?$/.test(it.str));
+      const uniqueCodes = [...new Set(tCodeItems.map(it => it.str))];
+      if (uniqueCodes.length === 1) {
+        code = uniqueCodes[0]; // overwrite — loop finishes so topmost single-code line wins
+      }
+
+      // Report time: first match (nearest to column header) is correct
+      if (!reportTime) {
+        const rm = jt.match(/\bReport\b.*?(\d{2}:\d{2}|\d{4})/i);
+        if (rm) reportTime = formatTime(rm[1]);
       }
     }
 
-    // Find column header row to determine column x-positions
-    let colHeaderLine = null;
-    for (let j = i + 1; j < Math.min(i + 25, allLines.length); j++) {
-      if (/\bDAY\b.*\bFLT#?\b/i.test(allLines[j].text)) {
-        colHeaderLine = allLines[j]; break;
-      }
-    }
+    if (!code) continue; // no unambiguous heading found — skip section
 
-    // Parse legs + hotel until Release/summary line
-    const legs = []; // { dayNum, fltNum, from, depTime, to, arrTime }
-    const hotels = []; // { dayNum: (after dayNum), name, phone }
+    // Collect legs, hotels, release, and summary going forward
+    const legs = [];
+    const hotels = [];
     let releaseTime = null;
     let creditHours = null;
     let lengthDays = null;
     let lastDayNum = null;
-    let inLegSection = false;
-    let released = false; // true after Release line — prevents re-entry from next pairing's DAY/FLT# header
+    let released = false;
 
-    for (let j = i + 1; j < Math.min(i + 80, allLines.length); j++) {
+    for (let j = i + 1; j < Math.min(i + 100, allLines.length); j++) {
       const jl = allLines[j];
       const jt = jl.text;
 
-      // Summary lines: always check regardless of state (appear after Release)
+      // Summary data — collect regardless of released state
       const lenM = jt.match(/Length\s*\(days\)[:\s]+(\d+)/i);
       if (lenM) lengthDays = +lenM[1];
       const credM = jt.match(/Credit[:\s]+([\dh:]+)/i);
       if (credM) creditHours = credM[1];
 
-      // After Release: only scan for summary; break on any new pairing T-code
       if (released) {
-        if (j > i + 5 && /\bT\d{3,5}\b/.test(jt)) break;
+        // After release: stop when hitting next section's column header
+        if (/\bDAY\b.*\bFLT#?\b/i.test(jt)) break;
         continue;
       }
 
-      // Column headers start the leg section (only before release)
-      if (/\bDAY\b.*\bFLT#?\b/i.test(jt)) { inLegSection = true; continue; }
-
-      // Skip content before the leg table header
-      if (!inLegSection) continue;
-
-      // Leg row: starts with day number, then flight#, from, dep, to, arr
-      // From observed data: items have specific x positions (day≈213, flt≈253, from≈286, dep≈335, to≈371, arr≈420)
+      // Leg row
       const legRow = parseLegRow(jl);
       if (legRow) { legs.push(legRow); lastDayNum = legRow.dayNum; continue; }
 
-      // Hotel line: "-------  Layover at HOTEL NAME (PHONE)  ------- 33h55 -------"
-      if (/Layover\s+at\s+/i.test(jt)) {
+      // Hotel/layover line
+      if (/\bLayover\b/i.test(jt) && /-{3,}/.test(jt)) {
         const nameMatch = jt.match(/Layover\s+at\s+(.+?)(?=\s*\(\d|\s*-{3,})/i);
-        const phoneInline = jt.match(/\((\d[\d\s.\-()+]{7,14})\)/);
-        const durationMatch = jt.match(/\b(\d+h\d+)\b/);
-        if (nameMatch) {
-          hotels.push({
-            afterDayNum: lastDayNum,
-            name: nameMatch[1].trim(),
-            phone: phoneInline ? phoneInline[1] : null,
-            duration: durationMatch ? durationMatch[1] : null,
-          });
+        let phoneM = jt.match(/\((\d[\d\s.\-()+]{7,14})\)/);
+        if (!phoneM && j + 1 < allLines.length) {
+          phoneM = allLines[j + 1].text.match(/^\s*\((\d[\d\s.\-()+]{7,14})\)/);
         }
+        const durationMatch = jt.match(/\b(\d+h\d+)\b/);
+        hotels.push({
+          afterDayNum: lastDayNum,
+          name: nameMatch ? nameMatch[1].trim() : null,
+          phone: phoneM ? phoneM[1] : null,
+          duration: durationMatch ? durationMatch[1] : null,
+        });
         continue;
       }
 
-      // Release line — lock the section; summary lines will still be caught above
+      // Release line
       if (/\bRelease\b/i.test(jt)) {
         const m = jt.match(/(\d{2}:\d{2}|\d{4})/);
         if (m) releaseTime = formatTime(m[1]);
-        inLegSection = false;
         released = true;
         continue;
       }
 
-      // Terminate if a new pairing section starts (while still in leg section)
-      if (j > i + 5 && PAIRING_CODE_RE.test(jt.trim())) break;
+      // Safeguard: new column header before release → next section starting, stop
+      if (/\bDAY\b.*\bFLT#?\b/i.test(jt)) break;
     }
 
     if (legs.length > 0) {
@@ -445,8 +420,8 @@ function parseLegRow(line) {
   const dayItem = items.find(it => /^\d$/.test(it.str) && it.x >= 180 && it.x <= 235);
   if (!dayItem) return null;
 
-  // Find flight# (3-4 digits)
-  const fltItem = items.find(it => /^\d{3,4}$/.test(it.str) && it.x > dayItem.x);
+  // Find flight# (3-4 digits, or DH_XXXX deadhead)
+  const fltItem = items.find(it => /^\d{3,4}$|^DH_\d+$/i.test(it.str) && it.x > dayItem.x);
   if (!fltItem) return null;
 
   // Collect remaining items after flt#
@@ -471,6 +446,7 @@ function parseLegRow(line) {
     depTime: timeItems[0].str,
     to: toItem.str,
     arrTime: timeItems[1].str,
+    deadhead: /^DH_/i.test(fltItem.str),
   };
 }
 
@@ -506,10 +482,10 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
   const sortedActKeys = Object.keys(actByDate).sort();
 
   for (const dk of sortedActKeys) {
-    const code = actByDate[dk];
-    if (code && code !== '-' && code !== '—') {
-      pairingStarts.push({ code, startDateKey: dk });
-    }
+    const rawCode = actByDate[dk];
+    if (!rawCode || rawCode === '-' || rawCode === '—') continue;
+    const code = rawCode.replace(/^>/, ''); // strip carryover '>' prefix
+    pairingStarts.push({ code, startDateKey: dk });
   }
 
   // Track occurrences per code (for matching with detailed sections)
@@ -526,13 +502,29 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
     const { code, startDateKey } = ps;
 
     // Off-type activities — mark explicitly then skip pairing logic
-    // Numeric-only codes (341, 259, …) = AVO/VO vacation days in Air Canada schedules
+    // Numeric-only codes (341, 259, …) = AVO/VO vacation days in Air Canada schedules.
+    // Propagate through consecutive dash-continuation days (e.g. 341 then - - -).
     if (/^\d+$/.test(code)) {
-      days[startDateKey] = { type: 'vacation' };
+      const sd = parseKey(startDateKey);
+      let numVacDays = 1;
+      for (let d = 1; d <= 60; d++) {
+        const nx = new Date(sd);
+        nx.setDate(nx.getDate() + d);
+        const nk = fmtDateKey(nx);
+        if (actByDate[nk] === '-' || actByDate[nk] === '—') numVacDays++;
+        else break;
+      }
+      for (let d = 0; d < numVacDays; d++) {
+        const dt = new Date(sd);
+        dt.setDate(dt.getDate() + d);
+        days[fmtDateKey(dt)] = { type: 'vacation' };
+      }
       continue;
     }
-    // PBS_* codes = Preferential Bidding System buffer/reserve days — leave as 'off'
-    if (/^PBS/i.test(code)) continue;
+    // PBS_* codes = Preferential Bidding System vacation allocation — mark as vacation
+    if (/^PBS/i.test(code)) { days[startDateKey] = { type: 'vacation' }; continue; }
+    // SDO = Scheduled Day Off — leave as 'off'
+    if (/^SDO$/i.test(code)) continue;
 
     // Get detailed data for this occurrence
     if (!codeOccurrenceIndex[code]) codeOccurrenceIndex[code] = 0;
@@ -592,7 +584,7 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
         releaseTime: isLastDay ? (det?.releaseTime || strip.rel?.[dk] || null) : null,
         creditHours: isLastDay ? (det?.creditHours || strip.cred?.[startDateKey] || null) : null,
         mainDestination: mainDest,
-        layoverCity: strip.lay?.[dk] || null,
+        layoverCity: (type !== 'flying') ? (strip.lay?.[dk] || null) : null,
       };
     }
 
@@ -613,12 +605,18 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getMainDest(legs, hotel, layAirport) {
-  if (layAirport) return layAirport;
-  if (hotel) {
-    // Try to get city from hotel name (last word before phone)
-    return null; // will resolve from legs
+  if (legs && legs.length > 0) {
+    if (hotel) {
+      // Layover night: last leg puts us at the overnight city
+      return legs[legs.length - 1].to;
+    }
+    // Flying day (no overnight): show the last place visited before heading home.
+    // For a 2-leg day trip [A→B, B→A]: legs[last].from = B (turnaround).
+    // For a single outbound leg: legs[0].to.
+    return legs.length >= 2 ? legs[legs.length - 1].from : legs[0].to;
   }
-  if (legs && legs.length > 0) return legs[legs.length - 1].to;
+  // No leg data (strip-only fallback): use the Lay strip value
+  if (layAirport) return layAirport;
   return null;
 }
 
