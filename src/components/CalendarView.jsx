@@ -47,18 +47,50 @@ export default function CalendarView({
     return grid;
   }, [monthDate]);
 
+  // Build per-day pairing metadata (isFirst, isLast, backToBackBefore)
+  const pairingMeta = useMemo(() => {
+    const meta = {};
+    const sortedKeys = Object.keys(schedule.days).sort();
+    for (let i = 0; i < sortedKeys.length; i++) {
+      const key = sortedKeys[i];
+      const dayData = schedule.days[key];
+      const type = dayData?.type;
+      if (type !== 'flying' && type !== 'layover') continue;
+
+      const isFirst = dayData.dayNum === 1;
+      const isLast  = dayData.dayNum === dayData.totalDays;
+
+      let backToBackBefore = false;
+      if (isFirst && i > 0) {
+        const prevKey = sortedKeys[i - 1];
+        const prevData = schedule.days[prevKey];
+        if (prevData?.type === 'flying' || prevData?.type === 'layover') {
+          // Check they are consecutive calendar days
+          const prevDate = new Date(prevKey + 'T12:00:00');
+          const curDate  = new Date(key + 'T12:00:00');
+          const diffDays = Math.round((curDate - prevDate) / 86400000);
+          if (diffDays === 1 && prevData.pairingCode !== dayData.pairingCode) {
+            backToBackBefore = true;
+          }
+        }
+      }
+
+      meta[key] = { isFirst, isLast, backToBackBefore };
+    }
+    return meta;
+  }, [schedule]);
+
   // Count stats for the month
   const stats = useMemo(() => {
-    let off = 0, flying = 0, layover = 0, training = 0;
+    let off = 0, trip = 0, training = 0;
     for (let d = 1; d <= new Date(year, month, 0).getDate(); d++) {
       const key = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const type = schedule.days[key]?.type;
       if (type === 'off') off++;
-      else if (type === 'flying') flying++;
-      else if (type === 'layover') layover++;
+      else if (type === 'flying' || type === 'layover') trip++;
       else if (type === 'training') training++;
     }
-    return { off, flying, layover, training };
+    return { off, trip, training };
   }, [schedule, year, month]);
 
   const handlePrevMonth = () => {
@@ -109,14 +141,9 @@ export default function CalendarView({
         <div className={styles.navRight}>
           {/* Stats chips */}
           <div className={styles.statsRow}>
-            {stats.flying > 0 && (
-              <span className={`${styles.statChip} ${styles.chipFlying}`}>
-                ✈ {stats.flying + stats.layover}d flying
-              </span>
-            )}
-            {stats.layover > 0 && (
-              <span className={`${styles.statChip} ${styles.chipLayover}`}>
-                📍 {stats.layover}d away
+            {stats.trip > 0 && (
+              <span className={`${styles.statChip} ${styles.chipTrip}`}>
+                ✈ {stats.trip}d on trip
               </span>
             )}
             {stats.off > 0 && (
@@ -170,6 +197,7 @@ export default function CalendarView({
               isToday={isToday}
               isCurrentMonth={isCurrentMonth}
               onClick={handleDayClick}
+              pairingMeta={pairingMeta[key] || null}
             />
           );
         })}
@@ -177,9 +205,8 @@ export default function CalendarView({
 
       {/* Legend */}
       <div className={styles.legend}>
+        <LegendItem colorClass="trip" label="Trip Day" />
         <LegendItem colorClass="off" label="Day Off" />
-        <LegendItem colorClass="flying" label="Flying" />
-        <LegendItem colorClass="layover" label="Layover Away" />
         <LegendItem colorClass="training" label="Training" />
       </div>
     </div>

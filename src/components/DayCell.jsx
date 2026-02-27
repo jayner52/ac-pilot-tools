@@ -1,15 +1,14 @@
 import { airportToCity } from '../utils/airportMap.js';
 import styles from './DayCell.module.css';
 
-const DAY_TYPE_LABELS = {
-  off: 'OFF',
-  flying: 'FLY',
-  layover: 'LAYOVER',
-  training: 'TRN',
-  unknown: '',
-};
+function timeToPercent(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return null;
+  return ((h * 60 + m) / 1440) * 100;
+}
 
-export default function DayCell({ date, dayData, isSelected, isToday, isCurrentMonth, onClick }) {
+export default function DayCell({ date, dayData, isSelected, isToday, isCurrentMonth, onClick, pairingMeta }) {
   if (!isCurrentMonth) {
     return <div className={`${styles.cell} ${styles.outside}`} />;
   }
@@ -17,19 +16,48 @@ export default function DayCell({ date, dayData, isSelected, isToday, isCurrentM
   const dayNum = date.getDate();
   const type = dayData?.type || 'unknown';
 
+  const isTrip   = type === 'flying' || type === 'layover';
+  const isFirst  = isTrip && dayData?.dayNum === 1;
+  const isLast   = isTrip && dayData?.dayNum === dayData?.totalDays;
+  const isSingle = isFirst && isLast;
+  const backToBack = pairingMeta?.backToBackBefore ?? false;
+
+  const pairingCode = dayData?.pairingCode;
+  const code     = dayData?.layoverCity || dayData?.mainDestination;
+  const cityName = code ? airportToCity(code) : null;
+
+  const resolvedType = isTrip ? 'trip' : type;
+
+  // ── Time bar ────────────────────────────────────────────
+  let barLeft = 0, barRight = 100, barLabel = null;
+  if (isTrip) {
+    if (isFirst && dayData.reportTime) {
+      barLeft = Math.max(0, timeToPercent(dayData.reportTime) ?? 0);
+    }
+    if (isLast && dayData.releaseTime) {
+      barRight = Math.min(100, timeToPercent(dayData.releaseTime) ?? 100);
+    }
+    // Guarantee at least 1 % width so the bar is always visible
+    if (barRight <= barLeft) barRight = Math.min(100, barLeft + 1);
+
+    if (isSingle && dayData.reportTime && dayData.releaseTime) {
+      barLabel = `${dayData.reportTime}–${dayData.releaseTime}`;
+    } else if (isFirst && dayData.reportTime) {
+      barLabel = `Rpt ${dayData.reportTime}`;
+    } else if (isLast && dayData.releaseTime) {
+      barLabel = `Rel ${dayData.releaseTime}`;
+    }
+  }
+
   const cellClass = [
     styles.cell,
-    styles[`type_${type}`],
-    isSelected ? styles.selected : '',
-    isToday ? styles.today : '',
+    styles[`type_${resolvedType}`],
+    isSelected && styles.selected,
+    isToday && styles.today,
+    backToBack && styles.backToBack,
+    pairingMeta?.isFirst && styles.pairingStart,
+    pairingMeta?.isLast  && styles.pairingEnd,
   ].filter(Boolean).join(' ');
-
-  // What to show in the cell
-  const pairingCode = dayData?.pairingCode;
-  const mainDest = dayData?.mainDestination
-    ? airportToCity(dayData.mainDestination)
-    : null;
-  const trainingCode = dayData?.code;
 
   return (
     <div
@@ -41,43 +69,38 @@ export default function DayCell({ date, dayData, isSelected, isToday, isCurrentM
       aria-label={`${date.toLocaleDateString('en-CA', { month: 'long', day: 'numeric' })}: ${type}`}
       aria-selected={isSelected}
     >
-      <div className={styles.header}>
-        <span className={styles.dayNum}>{dayNum}</span>
-        {isToday && <span className={styles.todayBadge} aria-hidden="true" />}
-      </div>
+      {isTrip && <span className={styles.accentBar} aria-hidden="true" />}
 
-      <div className={styles.content}>
-        {type === 'off' && (
-          <span className={styles.offLabel}>OFF</span>
-        )}
+      <div className={styles.body}>
+        {/* Top row: pairing code + day number */}
+        <div className={styles.topRow}>
+          {isTrip && pairingCode && <span className={styles.pairingCode}>{pairingCode}</span>}
+          <span className={styles.dayNum}>
+            {dayNum}
+            {isToday && <span className={styles.todayDot} aria-hidden="true" />}
+          </span>
+        </div>
 
-        {(type === 'flying' || type === 'layover') && pairingCode && (
-          <>
-            <span className={styles.pairingCode}>{pairingCode}</span>
-            {mainDest && (
-              <span className={styles.destination}>{mainDest}</span>
-            )}
-            {type === 'layover' && (
-              <span className={styles.layoverBadge} title="Layover away from base">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-              </span>
-            )}
-          </>
-        )}
+        {/* Middle: city / OFF / TRN / — */}
+        <div className={styles.middle}>
+          {type === 'off'      && <span className={styles.offLabel}>OFF</span>}
+          {isTrip && cityName  && <span className={styles.cityName}>{cityName}</span>}
+          {type === 'training' && <span className={styles.trainingLabel}>TRN</span>}
+          {type === 'unknown'  && <span className={styles.unknownLabel}>—</span>}
+        </div>
 
-        {type === 'training' && (
-          <>
-            <span className={styles.trainingLabel}>TRN</span>
-            {trainingCode && (
-              <span className={styles.trainingCode}>{trainingCode}</span>
-            )}
-          </>
-        )}
-
-        {type === 'unknown' && (
-          <span className={styles.unknownLabel}>—</span>
+        {/* Time bar — trip days only */}
+        {isTrip && (
+          <div className={styles.timeBarSection}>
+            <div
+              className={styles.timeTrack}
+              style={{
+                '--bar-left':  `${barLeft.toFixed(1)}%`,
+                '--bar-right': `${barRight.toFixed(1)}%`,
+              }}
+            />
+            {barLabel && <span className={styles.barLabel}>{barLabel}</span>}
+          </div>
         )}
       </div>
     </div>

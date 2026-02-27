@@ -135,16 +135,12 @@ export default function UploadPage({ onScheduleLoad }) {
         <h3 className={styles.legendTitle}>Calendar Color Key</h3>
         <div className={styles.legendItems}>
           <div className={styles.legendItem}>
+            <span className={`${styles.dot} ${styles.dotTrip}`} />
+            <span>Trip Day</span>
+          </div>
+          <div className={styles.legendItem}>
             <span className={`${styles.dot} ${styles.dotOff}`} />
             <span>Day Off</span>
-          </div>
-          <div className={styles.legendItem}>
-            <span className={`${styles.dot} ${styles.dotFlying}`} />
-            <span>Flying Day</span>
-          </div>
-          <div className={styles.legendItem}>
-            <span className={`${styles.dot} ${styles.dotLayover}`} />
-            <span>Layover</span>
           </div>
           <div className={styles.legendItem}>
             <span className={`${styles.dot} ${styles.dotTraining}`} />

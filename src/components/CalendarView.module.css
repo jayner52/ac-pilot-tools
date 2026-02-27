@@ -86,6 +86,12 @@
   border: 1px solid rgba(249,115,22,0.25);
 }
 
+.chipTrip {
+  background: var(--color-trip-bg);
+  color: var(--color-trip-text);
+  border: 1px solid var(--color-trip-border);
+}
+
 .chipOff {
   background: var(--color-off-bg);
   color: var(--color-off-text);
@@ -177,9 +183,8 @@
   flex-shrink: 0;
 }
 
+.dot_trip { background: var(--color-trip-accent); }
 .dot_off { background: var(--color-off-text); }
-.dot_flying { background: var(--color-flying-text); }
-.dot_layover { background: var(--color-layover-text); }
 .dot_training { background: var(--color-training-text); }
 
 /* Responsive */

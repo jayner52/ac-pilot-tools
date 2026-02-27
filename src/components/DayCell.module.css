@@ -1,15 +1,15 @@
+/* ── Base cell ───────────────────────────────────────────── */
 .cell {
   position: relative;
   border-radius: var(--radius-md);
-  padding: 0.5rem;
-  min-height: 80px;
+  min-height: 96px;
   cursor: pointer;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   transition: all 0.15s ease;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex-direction: row;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -22,7 +22,7 @@
 }
 
 .cell:focus-visible {
-  outline: 2px solid var(--color-flying-text);
+  outline: 2px solid var(--color-trip-accent);
   outline-offset: 2px;
 }
 
@@ -33,20 +33,158 @@
   pointer-events: none;
 }
 
-/* Type backgrounds */
+/* ── Accent bar (left edge, trip only) ───────────────────── */
+.accentBar {
+  width: 3px;
+  flex-shrink: 0;
+  align-self: stretch;
+  background: var(--color-trip-accent);
+}
+
+.pairingStart .accentBar { border-top-left-radius: var(--radius-md); }
+.pairingEnd   .accentBar { border-bottom-left-radius: var(--radius-md); }
+
+/* ── Body ────────────────────────────────────────────────── */
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.375rem 0.4rem 0.375rem 0.35rem;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+/* ── Top row ─────────────────────────────────────────────── */
+.topRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.2rem;
+}
+
+.pairingCode {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-trip-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.dayNum {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.todayDot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-trip-accent);
+  flex-shrink: 0;
+}
+
+/* ── Middle (city / label) ───────────────────────────────── */
+.middle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.cityName {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-off-text);
+}
+
+.trainingLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-training-text);
+}
+
+.unknownLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ── Time bar ────────────────────────────────────────────── */
+/*
+ * The bar represents the work period within a 24-hour day.
+ * --bar-left  = start of work as % of 24h  (0% = midnight, 50% = noon)
+ * --bar-right = end   of work as % of 24h
+ *
+ * Examples:
+ *   First day, report 06:30  → barLeft=27%,  barRight=100%  (most of day)
+ *   Last day,  release 01:00 → barLeft=0%,   barRight=4.2%  (tiny sliver)
+ *   Middle day               → barLeft=0%,   barRight=100%  (full bar)
+ */
+.timeBarSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.timeTrack {
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--color-trip-bg)     0%,
+    var(--color-trip-bg)     var(--bar-left,  0%),
+    var(--color-trip-accent) var(--bar-left,  0%),
+    var(--color-trip-accent) var(--bar-right, 100%),
+    var(--color-trip-bg)     var(--bar-right, 100%),
+    var(--color-trip-bg)     100%
+  );
+  flex-shrink: 0;
+}
+
+.barLabel {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--color-trip-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ── Type backgrounds ────────────────────────────────────── */
+.type_trip {
+  background: var(--color-trip-bg);
+  border-color: var(--color-trip-border);
+}
+
 .type_off {
   background: var(--color-off-bg);
   border-color: rgba(34, 197, 94, 0.15);
-}
-
-.type_flying {
-  background: var(--color-flying-bg);
-  border-color: rgba(59, 130, 246, 0.2);
-}
-
-.type_layover {
-  background: var(--color-layover-bg);
-  border-color: rgba(249, 115, 22, 0.2);
 }
 
 .type_training {
@@ -59,117 +197,27 @@
   border-color: var(--border);
 }
 
-/* Selected state */
+/* ── Selected ────────────────────────────────────────────── */
 .selected {
-  box-shadow: 0 0 0 2px var(--color-flying-text);
-  border-color: var(--color-flying-text) !important;
+  box-shadow: 0 0 0 2px var(--color-trip-accent);
+  border-color: var(--color-trip-accent) !important;
   z-index: 2;
 }
 
-/* Today indicator */
+/* ── Today ───────────────────────────────────────────────── */
 .today {
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
-.todayBadge {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-flying-text);
-  flex-shrink: 0;
+/* ── Back-to-back separator ──────────────────────────────── */
+.backToBack {
+  border-top: 2px solid var(--color-trip-accent) !important;
 }
 
-/* Header row */
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
-}
-
-.dayNum {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  line-height: 1;
-}
-
-/* Content */
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex: 1;
-  min-width: 0;
-}
-
-/* OFF */
-.offLabel {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-off-text);
-}
-
-/* Pairing code */
-.pairingCode {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.type_flying .pairingCode { color: var(--color-flying-text); }
-.type_layover .pairingCode { color: var(--color-layover-text); }
-
-/* Destination */
-.destination {
-  font-size: 0.65rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-}
-
-/* Layover pin icon */
-.layoverBadge {
-  display: inline-flex;
-  color: var(--color-layover-text);
-  margin-top: auto;
-}
-
-/* Training */
-.trainingLabel {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-training-text);
-}
-
-.trainingCode {
-  font-size: 0.65rem;
-  color: var(--color-training-text);
-  opacity: 0.8;
-}
-
-/* Unknown */
-.unknownLabel {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-/* Responsive: compact on small screens */
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .cell {
-    min-height: 56px;
-    padding: 0.375rem;
-  }
-  .pairingCode { font-size: 0.65rem; }
-  .destination { display: none; }
+  .cell { min-height: 72px; }
+  .pairingCode { display: none; }
+  .barLabel { display: none; }
   .dayNum { font-size: 0.7rem; }
 }

@@ -47,6 +47,10 @@
   flex-shrink: 0;
 }
 
+.header_trip {
+  background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, transparent 100%);
+  border-bottom-color: rgba(99,102,241,0.2);
+}
 .header_flying {
   background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, transparent 100%);
   border-bottom-color: rgba(59,130,246,0.2);
@@ -95,6 +99,7 @@
   flex-shrink: 0;
 }
 
+.ind_trip { background: var(--color-trip-accent); }
 .ind_flying { background: var(--color-flying-text); }
 .ind_layover { background: var(--color-layover-text); }
 .ind_off { background: var(--color-off-text); }

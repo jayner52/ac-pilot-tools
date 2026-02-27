@@ -227,7 +227,6 @@
   flex-shrink: 0;
 }
 
+.dotTrip { background: var(--color-trip-accent); }
 .dotOff { background: var(--color-off-text); }
-.dotFlying { background: var(--color-flying-text); }
-.dotLayover { background: var(--color-layover-text); }
 .dotTraining { background: var(--color-training-text); }

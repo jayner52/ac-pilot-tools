@@ -14,10 +14,10 @@ const TYPE_LABELS = {
 
 const TYPE_COLORS = {
   off: 'off',
-  flying: 'flying',
-  layover: 'layover',
+  flying: 'trip',
+  layover: 'trip',
   training: 'training',
-  unknown: 'flying',
+  unknown: 'trip',
 };
 
 export default function DayDetailPanel({ day, dayData, onClose, schedule }) {
