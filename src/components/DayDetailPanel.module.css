@@ -63,6 +63,10 @@
   background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, transparent 100%);
   border-bottom-color: rgba(34,197,94,0.15);
 }
+.header_vacation {
+  background: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, transparent 100%);
+  border-bottom-color: rgba(245,158,11,0.2);
+}
 .header_training {
   background: linear-gradient(135deg, rgba(234,179,8,0.1) 0%, transparent 100%);
   border-bottom-color: rgba(234,179,8,0.2);
@@ -103,6 +107,7 @@
 .ind_flying { background: var(--color-flying-text); }
 .ind_layover { background: var(--color-layover-text); }
 .ind_off { background: var(--color-off-text); }
+.ind_vacation { background: #f59e0b; }
 .ind_training { background: var(--color-training-text); }
 
 .pairingCode {
@@ -167,7 +172,13 @@
   border: 1px solid rgba(234,179,8,0.2);
 }
 
-.offIcon, .trainingIcon { font-size: 1.2rem; }
+.vacationMessage {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.offIcon, .trainingIcon, .vacationIcon { font-size: 1.2rem; }
 
 /* Timing row */
 .timingRow {

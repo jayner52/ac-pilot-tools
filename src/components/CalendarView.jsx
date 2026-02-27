@@ -82,15 +82,16 @@ export default function CalendarView({
 
   // Count stats for the month
   const stats = useMemo(() => {
-    let off = 0, trip = 0, training = 0;
+    let off = 0, trip = 0, vacation = 0, training = 0;
     for (let d = 1; d <= new Date(year, month, 0).getDate(); d++) {
       const key = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const type = schedule.days[key]?.type;
       if (type === 'off') off++;
       else if (type === 'flying' || type === 'layover') trip++;
+      else if (type === 'vacation') vacation++;
       else if (type === 'training') training++;
     }
-    return { off, trip, training };
+    return { off, trip, vacation, training };
   }, [schedule, year, month]);
 
   const handlePrevMonth = () => {
@@ -144,6 +145,11 @@ export default function CalendarView({
             {stats.trip > 0 && (
               <span className={`${styles.statChip} ${styles.chipTrip}`}>
                 ✈ {stats.trip}d on trip
+              </span>
+            )}
+            {stats.vacation > 0 && (
+              <span className={`${styles.statChip} ${styles.chipVacation}`}>
+                ☀ {stats.vacation}d vacation
               </span>
             )}
             {stats.off > 0 && (

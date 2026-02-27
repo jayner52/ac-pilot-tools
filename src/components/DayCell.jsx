@@ -26,7 +26,7 @@ export default function DayCell({ date, dayData, isSelected, isToday, isCurrentM
   const code     = dayData?.layoverCity || dayData?.mainDestination;
   const cityName = code ? airportToCity(code) : null;
 
-  const resolvedType = isTrip ? 'trip' : type;
+  const resolvedType = isTrip ? 'trip' : (type === 'vacation' ? 'vacation' : type);
 
   // ── Time bar ─────────────────────────────────────────────
   // 0% = midnight, 100% = 23:59
@@ -93,9 +93,10 @@ export default function DayCell({ date, dayData, isSelected, isToday, isCurrentM
             </span>
           </div>
 
-          {/* Middle: city / OFF / TRN / — */}
+          {/* Middle: city / OFF / VAC / TRN / — */}
           <div className={styles.middle}>
             {type === 'off'      && <span className={styles.offLabel}>OFF</span>}
+            {type === 'vacation' && <span className={styles.vacationLabel}>VAC</span>}
             {isTrip && cityName  && <span className={styles.cityName}>{cityName}</span>}
             {type === 'training' && <span className={styles.trainingLabel}>TRN</span>}
             {type === 'unknown'  && <span className={styles.unknownLabel}>—</span>}

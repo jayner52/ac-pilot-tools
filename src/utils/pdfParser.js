@@ -246,18 +246,18 @@ function parseStrip(pageLines, bidPeriod) {
   }
 
   // Find named rows (Act, Lay, Rpt, Rel, Cred)
+  // The row label can appear at the LEFT (February format) or RIGHT (October format)
+  // of the row, so we scan all items in each line, not just the first.
   const namedRows = {};
   for (const line of pageLines) {
     if (line.y <= dateRow.y) continue;
     if (line.y > dateRow.y + 200) break;
-    const firstItem = line.items[0];
-    if (!firstItem) continue;
-    const label = firstItem.str.toUpperCase().replace('.', '');
-
-    for (const [key, aliases] of Object.entries(STRIP_ROW_LABELS)) {
-      if (aliases.includes(label)) {
-        namedRows[key] = line;
-        break;
+    for (const item of line.items) {
+      const label = item.str.toUpperCase().replace('.', '');
+      for (const [key, aliases] of Object.entries(STRIP_ROW_LABELS)) {
+        if (aliases.includes(label) && !namedRows[key]) {
+          namedRows[key] = line;
+        }
       }
     }
   }
@@ -272,12 +272,17 @@ function parseStrip(pageLines, bidPeriod) {
   return { act, lay, rpt, rel, cred, colMap };
 }
 
+// Flat set of all strip row label strings for quick filtering
+const ALL_STRIP_LABELS = new Set(
+  Object.values(STRIP_ROW_LABELS).flat().map(s => s.toUpperCase())
+);
+
 function parseStripRowToDateMap(rowLine, colMap) {
   if (!rowLine || !colMap.length) return {};
   const result = {};
-  // Skip the first item if it's a row label
-  const dataItems = rowLine.items.slice(1);
-  for (const item of dataItems) {
+  for (const item of rowLine.items) {
+    // Skip the row-label item itself (can be first OR last depending on PDF variant)
+    if (ALL_STRIP_LABELS.has(item.str.toUpperCase().replace('.', ''))) continue;
     const nearest = findNearestCol(item.x, colMap);
     if (nearest) {
       const key = fmtDateKey(nearest);
@@ -383,13 +388,14 @@ function parseDetailedSections(allLines) {
 
       // Hotel line: "-------  Layover at HOTEL NAME (PHONE)  ------- 33h55 -------"
       if (/Layover\s+at\s+/i.test(jt)) {
-        const hotelMatch = jt.match(/Layover\s+at\s+(.+?)(?:\s*\((\d[\d\s.\-()]+)\))?\s*$/i);
-        if (hotelMatch) {
-          const phoneInline = jt.match(/\((\d[\d\s.\-()+]{7,14})\)/);
-          const durationMatch = jt.match(/\b(\d+h\d+)\b/);
+        // Extract name: stop at the phone number "(ddd" or at separator dashes "---"
+        const nameMatch = jt.match(/Layover\s+at\s+(.+?)(?=\s*\(\d|\s*-{3,})/i);
+        const phoneInline = jt.match(/\((\d[\d\s.\-()+]{7,14})\)/);
+        const durationMatch = jt.match(/\b(\d+h\d+)\b/);
+        if (nameMatch) {
           hotels.push({
             afterDayNum: lastDayNum,
-            name: hotelMatch[1].replace(/\s*\([^)]*\)/, '').trim(),
+            name: nameMatch[1].trim(),
             phone: phoneInline ? phoneInline[1] : null,
             duration: durationMatch ? durationMatch[1] : null,
           });
@@ -514,10 +520,14 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
   for (const ps of pairingStarts) {
     const { code, startDateKey } = ps;
 
-    // Off-type activities (vacation, PBS buffer days, etc.) — leave as 'off'
-    // Numeric-only codes (341, 259, …) = vacation/off variants in Air Canada schedules
-    // PBS_* codes = Preferential Bidding System buffer days
-    if (/^\d+$/.test(code) || /^PBS/i.test(code)) continue;
+    // Off-type activities — mark explicitly then skip pairing logic
+    // Numeric-only codes (341, 259, …) = AVO/VO vacation days in Air Canada schedules
+    if (/^\d+$/.test(code)) {
+      days[startDateKey] = { type: 'vacation' };
+      continue;
+    }
+    // PBS_* codes = Preferential Bidding System buffer/reserve days — leave as 'off'
+    if (/^PBS/i.test(code)) continue;
 
     // Get detailed data for this occurrence
     if (!codeOccurrenceIndex[code]) codeOccurrenceIndex[code] = 0;

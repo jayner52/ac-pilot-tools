@@ -136,6 +136,14 @@
   color: var(--color-off-text);
 }
 
+.vacationLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-vacation-text, #f59e0b);
+}
+
 .trainingLabel {
   font-size: 0.65rem;
   font-weight: 700;
@@ -212,6 +220,11 @@
 .type_off {
   background: var(--color-off-bg);
   border-color: rgba(34, 197, 94, 0.15);
+}
+
+.type_vacation {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .type_training {

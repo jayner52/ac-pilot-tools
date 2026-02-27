@@ -6,6 +6,7 @@ import styles from './DayDetailPanel.module.css';
 
 const TYPE_LABELS = {
   off: 'Day Off',
+  vacation: 'Vacation Day',
   flying: 'Flying',
   layover: 'Layover Away',
   training: 'Training',
@@ -14,6 +15,7 @@ const TYPE_LABELS = {
 
 const TYPE_COLORS = {
   off: 'off',
+  vacation: 'vacation',
   flying: 'trip',
   layover: 'trip',
   training: 'training',
@@ -128,6 +130,13 @@ export default function DayDetailPanel({ day, dayData, onClose, schedule }) {
             <div className={styles.offMessage}>
               <span className={styles.offIcon}>✓</span>
               <span>Rest day</span>
+            </div>
+          )}
+
+          {type === 'vacation' && (
+            <div className={styles.vacationMessage}>
+              <span className={styles.vacationIcon}>☀</span>
+              <span>Vacation day — AVO/VO credit</span>
             </div>
           )}
 
