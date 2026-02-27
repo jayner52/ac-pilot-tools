@@ -263,7 +263,7 @@ function parseStrip(pageLines, bidPeriod) {
   }
 
   // Parse each named row into a map: date-key → value
-  const act = parseStripRowToDateMap(namedRows.act, colMap);
+  const act = parseStripRowToDateMap(namedRows.act, colMap, true); // keep dashes (continuation days)
   const lay = parseStripRowToDateMap(namedRows.lay, colMap);
   const rpt = parseStripRowToDateMap(namedRows.rpt, colMap);
   const rel = parseStripRowToDateMap(namedRows.rel, colMap);
@@ -277,7 +277,7 @@ const ALL_STRIP_LABELS = new Set(
   Object.values(STRIP_ROW_LABELS).flat().map(s => s.toUpperCase())
 );
 
-function parseStripRowToDateMap(rowLine, colMap) {
+function parseStripRowToDateMap(rowLine, colMap, includeDashes = false) {
   if (!rowLine || !colMap.length) return {};
   const result = {};
   for (const item of rowLine.items) {
@@ -287,7 +287,7 @@ function parseStripRowToDateMap(rowLine, colMap) {
     if (nearest) {
       const key = fmtDateKey(nearest);
       const val = item.str.trim();
-      if (val && val !== '-' && val !== '—') {
+      if (val && (includeDashes || (val !== '-' && val !== '—'))) {
         result[key] = val;
       }
     }
@@ -373,22 +373,26 @@ function parseDetailedSections(allLines) {
       const jl = allLines[j];
       const jt = jl.text;
 
-      // Start parsing legs after column headers
+      // Column headers start the leg section
       if (/\bDAY\b.*\bFLT#?\b/i.test(jt)) { inLegSection = true; continue; }
+
+      // Summary lines: check BEFORE the guard — they appear AFTER Release,
+      // when inLegSection is already false.
+      const lenM = jt.match(/Length\s*\(days\)[:\s]+(\d+)/i);
+      if (lenM) lengthDays = +lenM[1];
+      const credM = jt.match(/Credit[:\s]+([\dh:]+)/i);
+      if (credM) creditHours = credM[1];
+
+      // Skip content before the leg table header
       if (!inLegSection) continue;
 
       // Leg row: starts with day number, then flight#, from, dep, to, arr
       // From observed data: items have specific x positions (day≈213, flt≈253, from≈286, dep≈335, to≈371, arr≈420)
       const legRow = parseLegRow(jl);
-      if (legRow) {
-        legs.push(legRow);
-        lastDayNum = legRow.dayNum;
-        continue;
-      }
+      if (legRow) { legs.push(legRow); lastDayNum = legRow.dayNum; continue; }
 
       // Hotel line: "-------  Layover at HOTEL NAME (PHONE)  ------- 33h55 -------"
       if (/Layover\s+at\s+/i.test(jt)) {
-        // Extract name: stop at the phone number "(ddd" or at separator dashes "---"
         const nameMatch = jt.match(/Layover\s+at\s+(.+?)(?=\s*\(\d|\s*-{3,})/i);
         const phoneInline = jt.match(/\((\d[\d\s.\-()+]{7,14})\)/);
         const durationMatch = jt.match(/\b(\d+h\d+)\b/);
@@ -411,14 +415,8 @@ function parseDetailedSections(allLines) {
         continue;
       }
 
-      // Summary line: "Length (days): 3  Credit: 12h03 ..."
-      const lenM = jt.match(/Length\s*\(days\)[:\s]+(\d+)/i);
-      if (lenM) lengthDays = +lenM[1];
-      const credM = jt.match(/Credit[:\s]+([\dh:]+)/i);
-      if (credM) creditHours = credM[1];
-
-      // Stop when we hit a new pairing section header or page end
-      if (j > i + 5 && PAIRING_CODE_RE.test(jt.trim()) && !legRow) break;
+      // Terminate if a new pairing section starts
+      if (j > i + 5 && PAIRING_CODE_RE.test(jt.trim())) break;
     }
 
     if (legs.length > 0) {
@@ -502,7 +500,7 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
 
   for (const dk of sortedActKeys) {
     const code = actByDate[dk];
-    if (code && code !== '-') {
+    if (code && code !== '-' && code !== '—') {
       pairingStarts.push({ code, startDateKey: dk });
     }
   }
@@ -535,7 +533,23 @@ function buildSchedule(strip, detailedPairings, bidPeriod) {
     const det = detArr[codeOccurrenceIndex[code]] || null;
     codeOccurrenceIndex[code]++;
 
-    const lengthDays = det?.lengthDays || 1;
+    let lengthDays = det?.lengthDays || 0;
+    if (!lengthDays) {
+      // Fallback: count consecutive '-' entries in the Act row
+      // (each '-' is a continuation day of the same pairing)
+      lengthDays = 1;
+      const sd = parseKey(startDateKey);
+      for (let d = 1; d <= 14; d++) {
+        const nx = new Date(sd);
+        nx.setDate(nx.getDate() + d);
+        const nk = fmtDateKey(nx);
+        if (actByDate[nk] === '-' || actByDate[nk] === '—') {
+          lengthDays++;
+        } else {
+          break;
+        }
+      }
+    }
     const startDate = parseKey(startDateKey);
 
     // Build pairing days
