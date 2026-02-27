@@ -368,20 +368,26 @@ function parseDetailedSections(allLines) {
     let lengthDays = null;
     let lastDayNum = null;
     let inLegSection = false;
+    let released = false; // true after Release line — prevents re-entry from next pairing's DAY/FLT# header
 
     for (let j = i + 1; j < Math.min(i + 80, allLines.length); j++) {
       const jl = allLines[j];
       const jt = jl.text;
 
-      // Column headers start the leg section
-      if (/\bDAY\b.*\bFLT#?\b/i.test(jt)) { inLegSection = true; continue; }
-
-      // Summary lines: check BEFORE the guard — they appear AFTER Release,
-      // when inLegSection is already false.
+      // Summary lines: always check regardless of state (appear after Release)
       const lenM = jt.match(/Length\s*\(days\)[:\s]+(\d+)/i);
       if (lenM) lengthDays = +lenM[1];
       const credM = jt.match(/Credit[:\s]+([\dh:]+)/i);
       if (credM) creditHours = credM[1];
+
+      // After Release: only scan for summary; break on any new pairing T-code
+      if (released) {
+        if (j > i + 5 && /\bT\d{3,5}\b/.test(jt)) break;
+        continue;
+      }
+
+      // Column headers start the leg section (only before release)
+      if (/\bDAY\b.*\bFLT#?\b/i.test(jt)) { inLegSection = true; continue; }
 
       // Skip content before the leg table header
       if (!inLegSection) continue;
@@ -407,15 +413,16 @@ function parseDetailedSections(allLines) {
         continue;
       }
 
-      // Release line — stop accepting legs after this point
+      // Release line — lock the section; summary lines will still be caught above
       if (/\bRelease\b/i.test(jt)) {
         const m = jt.match(/(\d{2}:\d{2}|\d{4})/);
         if (m) releaseTime = formatTime(m[1]);
         inLegSection = false;
+        released = true;
         continue;
       }
 
-      // Terminate if a new pairing section starts
+      // Terminate if a new pairing section starts (while still in leg section)
       if (j > i + 5 && PAIRING_CODE_RE.test(jt.trim())) break;
     }
 
