@@ -341,6 +341,18 @@ function parseDetailedSections(allLines) {
       }
     }
 
+    // DEBUG: dump full backward scan for pages 2-5
+    if (line.page >= 2 && line.page <= 5) {
+      const rows = [];
+      for (let j2 = i - 1; j2 >= Math.max(0, i - 30); j2--) {
+        if (allLines[j2].page !== line.page) break;
+        const jl2 = allLines[j2];
+        rows.push(`  y=${jl2.y}: ${jl2.items.map(it => `"${it.str}"@x${it.x}`).join(' | ')}`);
+      }
+      console.log(`\n[PDF p${line.page}] DAY_FLT# y=${line.y} → code=${code}`);
+      console.log(rows.join('\n'));
+    }
+
     if (!code) continue; // no unambiguous heading found — skip section
 
     // Collect legs, hotels, release, and summary going forward
