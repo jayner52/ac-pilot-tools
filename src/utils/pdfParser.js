@@ -317,8 +317,8 @@ function parseDetailedSections(allLines) {
     if (!/\bDAY\b.*\bFLT#?\b/i.test(line.text)) continue;
 
     // Look backward on the SAME page for the pairing T-code and report time.
-    // Use item-level detection so multi-T-code mini-calendar lines (cross-refs) are skipped.
-    // Only a line with exactly ONE unique T-code item is the standalone heading.
+    // Stop as soon as the heading line is found (nearest T-code wins) so we never
+    // scan past it into the previous pairing's content.
     let code = null;
     let reportTime = null;
     for (let j = i - 1; j >= Math.max(0, i - 30); j--) {
@@ -326,31 +326,20 @@ function parseDetailedSections(allLines) {
       const jl = allLines[j];
       const jt = jl.text;
 
-      // T-code: accept only lines whose items contain exactly one unique T-code.
-      // Lines with 2+ T-code items are mini-calendar cross-refs — skip them.
-      const tCodeItems = jl.items.filter(it => /^T\d{3,5}[A-Z]?$/.test(it.str));
-      const uniqueCodes = [...new Set(tCodeItems.map(it => it.str))];
-      if (uniqueCodes.length === 1) {
-        code = uniqueCodes[0]; // overwrite — loop finishes so topmost single-code line wins
-      }
-
-      // Report time: first match (nearest to column header) is correct
+      // Report time: check first so it's captured even when it falls on the heading line
       if (!reportTime) {
         const rm = jt.match(/\bReport\b.*?(\d{2}:\d{2}|\d{4})/i);
         if (rm) reportTime = formatTime(rm[1]);
       }
-    }
 
-    // DEBUG: dump full backward scan for pages 2-5
-    if (line.page >= 2 && line.page <= 5) {
-      const rows = [];
-      for (let j2 = i - 1; j2 >= Math.max(0, i - 30); j2--) {
-        if (allLines[j2].page !== line.page) break;
-        const jl2 = allLines[j2];
-        rows.push(`  y=${jl2.y}: ${jl2.items.map(it => `"${it.str}"@x${it.x}`).join(' | ')}`);
+      // T-code heading: nearest line with exactly one unique T-code.
+      // Break immediately so we don't scan further into the previous pairing.
+      const tCodeItems = jl.items.filter(it => /^T\d{3,5}[A-Z]?$/.test(it.str));
+      const uniqueCodes = [...new Set(tCodeItems.map(it => it.str))];
+      if (uniqueCodes.length === 1) {
+        code = uniqueCodes[0];
+        break; // Found heading — stop scanning here
       }
-      console.log(`\n[PDF p${line.page}] DAY_FLT# y=${line.y} → code=${code}`);
-      console.log(rows.join('\n'));
     }
 
     if (!code) continue; // no unambiguous heading found — skip section
