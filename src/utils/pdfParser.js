@@ -341,6 +341,9 @@ function parseDetailedSections(allLines) {
       }
     }
 
+    // DEBUG: log what T-code items were seen in the backward scan
+    { const dbg = []; for (let j2 = i - 1; j2 >= Math.max(0, i - 30); j2--) { if (allLines[j2].page !== line.page) break; const tc = allLines[j2].items.filter(it => /^T\d{3,5}[A-Z]?$/.test(it.str)); if (tc.length) dbg.push(`  y=${allLines[j2].y} items=[${allLines[j2].items.map(it=>it.str+'@x'+it.x).join(' | ')}]`); } console.log(`[PDF] page=${line.page} anchor="${line.text.slice(0,40)}" → code=${code}\n${dbg.join('\n')}`); }
+
     if (!code) continue; // no unambiguous heading found — skip section
 
     // Collect legs, hotels, release, and summary going forward
